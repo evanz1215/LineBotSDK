@@ -1317,6 +1317,71 @@ namespace Line
             var content = await response.Content.ReadAsStreamAsync();
         }
 
+        public async Task GetDefaultRichMenuAsync()
+        {
+            var response = await _httpClient.GetAsync($"user/all/richmenu");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task DeleteDefaultRichMenuAsync()
+        {
+            var response = await _httpClient.DeleteAsync($"user/all/richmenu");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task GetUserDefaultRichMenuAsync(string userId)
+        {
+            var response = await _httpClient.GetAsync($"user/{userId}/richmenu");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task SetUserDefaultRichMenuAsync(string userId, string richMenuId)
+        {
+            var response = await _httpClient.PostAsync($"user/{userId}/richmenu/{richMenuId}", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task DeleteUserDefaultRichMenuAsync(string userId)
+        {
+            var response = await _httpClient.DeleteAsync($"user/{userId}/richmenu");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
         #endregion RichMenu
 
         #region Group
