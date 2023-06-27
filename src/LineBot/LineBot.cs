@@ -1382,6 +1382,57 @@ namespace Line
             var content = await response.Content.ReadAsStringAsync();
         }
 
+        public async Task GetRichMenuAliasAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"richmenu/alias/list");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new Exception(errorMessage);
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+            }
+            catch
+            {
+                Console.WriteLine("");
+            }
+        }
+
+        public async Task SetRichMenuAliasAsync(SetRichMenuAliasDto setRichMenuAliasDto)
+        {
+            var jsonContent = JsonConvert.SerializeObject(setRichMenuAliasDto);
+            var stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"richmenu/alias", stringContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task DeleteRichMenuAliasAsync(string richMenuAliasId)
+        {
+
+            var response = await _httpClient.DeleteAsync($"richmenu/alias/{richMenuAliasId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+
+        }
+
         #endregion RichMenu
 
         #region Group
