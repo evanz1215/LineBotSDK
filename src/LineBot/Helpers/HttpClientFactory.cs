@@ -16,5 +16,16 @@ namespace Line.Helpers
 
             return client;
         }
+
+        public static HttpClient CreateData(string channelAccessToken)
+        {
+            var client = new HttpClient()
+            {
+                BaseAddress = new Uri(LineAPIConstant.LineDataAPIBaseUrl)
+            };
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {channelAccessToken}");
+
+            return client;
+        }
     }
 }

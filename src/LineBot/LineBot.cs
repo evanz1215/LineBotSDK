@@ -9,12 +9,15 @@ using Line.Messages.Location;
 using Line.Messages.Sticker;
 using Line.Messages.Text;
 using Line.Messages.Video;
+using Line.RichMenus;
 using Line.UserProfiles;
 using Line.Webhooks;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,12 +26,14 @@ namespace Line
     public class LineBot
     {
         private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClientData;
 
         public LineBot(string channelSecret, string channelAccessToken)
         {
             ChannelSecret = channelSecret;
             ChannelAccessToken = channelAccessToken;
             _httpClient = _httpClient ?? HttpClientFactory.Create(ChannelAccessToken);
+            _httpClientData = _httpClientData ?? HttpClientFactory.CreateData(ChannelAccessToken);
         }
 
         #region BroadcastMessage
@@ -83,6 +88,29 @@ namespace Line
             }
         }
 
+        public void BroadcastTextMessage(TextMessage message)
+        {
+            var textMessages = new List<TextMessage> { message };
+            BroadcastTextMessage(textMessages);
+        }
+
+        public void BroadcastTextMessage(IEnumerable<string> messages)
+        {
+            var textMessages = new List<TextMessage>();
+            foreach (var message in messages)
+            {
+                textMessages.Add(new TextMessage(message));
+            }
+            BroadcastTextMessage(textMessages);
+        }
+
+        public void BroadcastTextMessage(string messaage)
+        {
+            var textMessage = new TextMessage(messaage);
+
+            BroadcastTextMessage(textMessage);
+        }
+
         #endregion BroadcastTextMessage
 
         #region BroadcastImageMessage
@@ -112,6 +140,30 @@ namespace Line
             await BroadcastMessageAsync(imageMessage);
         }
 
+        public void BroadcastImageMessage(IEnumerable<ImageMessage> messages)
+        {
+            BroadcastMessage(messages);
+        }
+
+        public void BroadcastImageMessage(ImageMessage message)
+        {
+            BroadcastMessage(message);
+        }
+
+        public void BroadcastImageMessage(string originalContentUrl, string previewImageUrl)
+        {
+            var imageMessage = new ImageMessage(originalContentUrl, previewImageUrl);
+
+            BroadcastImageMessage(imageMessage);
+        }
+
+        public void BroadcastImageMessage(Uri originalContentUrl, Uri previewImageUrl)
+        {
+            var imageMessage = new ImageMessage(originalContentUrl, previewImageUrl);
+
+            BroadcastImageMessage(imageMessage);
+        }
+
         #endregion BroadcastImageMessage
 
         #region BroadcastVideoMessage
@@ -127,9 +179,23 @@ namespace Line
             await BroadcastMessageAsync(videoMessages);
         }
 
+        public async Task BroadcastVideoMessageAsync(string originalContentUrl, string previewImageUrl, string trackingId)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl, trackingId);
+
+            await BroadcastMessageAsync(videoMessage);
+        }
+
         public async Task BroadcastVideoMessageAsync(string originalContentUrl, string previewImageUrl)
         {
             var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl);
+
+            await BroadcastMessageAsync(videoMessage);
+        }
+
+        public async Task BroadcastVideoMessageAsync(Uri originalContentUrl, Uri previewImageUrl, string trackingId)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl, trackingId);
 
             await BroadcastMessageAsync(videoMessage);
         }
@@ -139,6 +205,44 @@ namespace Line
             var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl);
 
             await BroadcastMessageAsync(videoMessage);
+        }
+
+        public void BroadcastVideoMessage(IEnumerable<VideoMessage> messages)
+        {
+            BroadcastMessage(messages);
+        }
+
+        public void BroadcastVideoMessage(VideoMessage message)
+        {
+            BroadcastMessage(message);
+        }
+
+        public void BroadcastVideoMessage(string originalContentUrl, string previewImageUrl, string trackingId)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl, trackingId);
+
+            BroadcastVideoMessage(videoMessage);
+        }
+
+        public void BroadcastVideoMessage(string originalContentUrl, string previewImageUrl)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl);
+
+            BroadcastVideoMessage(videoMessage);
+        }
+
+        public void BroadcastVideoMessage(Uri originalContentUrl, Uri previewImageUrl, string trackingId)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl, trackingId);
+
+            BroadcastVideoMessage(videoMessage);
+        }
+
+        public void BroadcastVideoMessage(Uri originalContentUrl, Uri previewImageUrl)
+        {
+            var videoMessage = new VideoMessage(originalContentUrl, previewImageUrl);
+
+            BroadcastVideoMessage(videoMessage);
         }
 
         #endregion BroadcastVideoMessage
@@ -170,6 +274,30 @@ namespace Line
             await BroadcastMessageAsync(audioMessage);
         }
 
+        public void BroadcastAudioMessage(IEnumerable<AudioMessage> messages)
+        {
+            BroadcastMessage(messages);
+        }
+
+        public void BroadcastAudioMessage(AudioMessage message)
+        {
+            BroadcastMessage(message);
+        }
+
+        public void BroadcastAudioMessage(string originalContentUrl, int duration)
+        {
+            var audioMessage = new AudioMessage(originalContentUrl, duration);
+
+            BroadcastAudioMessage(audioMessage);
+        }
+
+        public void BroadcastAudioMessage(Uri originalContentUrl, int duration)
+        {
+            var audioMessage = new AudioMessage(originalContentUrl, duration);
+
+            BroadcastAudioMessage(audioMessage);
+        }
+
         #endregion BroadcastAudioMessage
 
         public async Task BroadcastMessageAsync(IEnumerable<IMessage> messages)
@@ -195,6 +323,46 @@ namespace Line
             string jsonContent = JsonConvert.SerializeObject(broadcastMessage);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync(LineAPIConstant.BroadcastMessage, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = response.Content.ReadAsStringAsync().Result;
+                // 處理錯誤訊息
+                Console.WriteLine($"錯誤訊息: {errorMessage}");
+            }
+        }
+
+        public void BroadcastMessage(IEnumerable<IMessage> messages)
+        {
+            BroadcastMessage broadcastMessage = new BroadcastMessage(messages);
+
+            string jsonContent = JsonConvert.SerializeObject(broadcastMessage);
+
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var task = _httpClient.PostAsync(LineAPIConstant.BroadcastMessage, content);
+            task.Wait(); // 等待非同步操作完成
+
+            var response = task.Result;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = response.Content.ReadAsStringAsync().Result;
+                // 處理錯誤訊息
+                Console.WriteLine($"錯誤訊息: {errorMessage}");
+            }
+        }
+
+        public void BroadcastMessage(IMessage messages)
+        {
+            BroadcastMessage broadcastMessage = new BroadcastMessage(messages);
+
+            string jsonContent = JsonConvert.SerializeObject(broadcastMessage);
+
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var task = _httpClient.PostAsync(LineAPIConstant.BroadcastMessage, content);
+            task.Wait(); // 等待非同步操作完成
+
+            var response = task.Result;
 
             if (!response.IsSuccessStatusCode)
             {
@@ -522,6 +690,11 @@ namespace Line
             await PushMessageAsync(to, messages);
         }
 
+        private async Task PushImagemapMessageAsync(string to, ImagemapMessage message)
+        {
+            await PushMessageAsync(to, message);
+        }
+
         #endregion PushImagemapMessage
 
         public async Task PushMessageAsync(string to, IEnumerable<IMessage> messages)
@@ -620,6 +793,34 @@ namespace Line
             await ReplyMessageAsync(replyToken, textMessages);
         }
 
+        public void ReplyTextMessage(string replyToken, IEnumerable<TextMessage> messages)
+        {
+            ReplyMessage(replyToken, messages);
+        }
+
+        public void ReplyTextMessage(string replyToken, TextMessage message)
+        {
+            ReplyMessage(replyToken, message);
+        }
+
+        public void ReplyTextMessage(string replyToken, string message)
+        {
+            var textMessage = new TextMessage(message);
+            ReplyMessage(replyToken, textMessage);
+        }
+
+        public void ReplyTextMessage(string replyToken, IEnumerable<string> messages)
+        {
+            List<TextMessage> textMessages = new List<TextMessage>();
+
+            foreach (var message in messages)
+            {
+                textMessages.Add(new TextMessage(message));
+            }
+
+            ReplyMessage(replyToken, textMessages);
+        }
+
         #endregion ReplyTextMessage
 
         #region ReplyImageMessage
@@ -644,6 +845,28 @@ namespace Line
         {
             var imageMessage = new ImageMessage(originalContentUrl, previewImageUrl);
             await ReplyMessageAsync(replyToken, imageMessage);
+        }
+
+        public void ReplyImageMessage(string replyToken, IEnumerable<ImageMessage> messages)
+        {
+            ReplyMessage(replyToken, messages);
+        }
+
+        public void ReplyImageMessage(string replyToken, ImageMessage message)
+        {
+            ReplyMessage(replyToken, message);
+        }
+
+        public void ReplyImageMessage(string replyToken, Uri originalContentUrl, Uri previewImageUrl)
+        {
+            var imageMessage = new ImageMessage(originalContentUrl, previewImageUrl);
+            ReplyMessage(replyToken, imageMessage);
+        }
+
+        public void ReplyImageMessage(string replyToken, string originalContentUrl, string previewImageUrl)
+        {
+            var imageMessage = new ImageMessage(originalContentUrl, previewImageUrl);
+            ReplyMessage(replyToken, imageMessage);
         }
 
         #endregion ReplyImageMessage
@@ -671,6 +894,40 @@ namespace Line
             if (!response.IsSuccessStatusCode)
             {
                 var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+        }
+
+        public void ReplyMessage(string replyToken, IEnumerable<IMessage> messages)
+        {
+            var replyMessage = new ReplyMessage(replyToken, messages);
+
+            string jsonContent = JsonConvert.SerializeObject(replyMessage);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var task = _httpClient.PostAsync($"message/reply", content);
+            task.Wait(); // 等待非同步操作完成
+            var response = task.Result;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = response.Content.ReadAsStringAsync().Result;
+                throw new Exception(errorMessage);
+            }
+        }
+
+        public void ReplyMessage(string replyToken, IMessage message)
+        {
+            var replyMessage = new ReplyMessage(replyToken, message);
+
+            string jsonContent = JsonConvert.SerializeObject(replyMessage);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var task = _httpClient.PostAsync($"message/reply", content);
+            task.Wait(); // 等待非同步操作完成
+            var response = task.Result;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = response.Content.ReadAsStringAsync().Result;
                 throw new Exception(errorMessage);
             }
         }
@@ -903,6 +1160,211 @@ namespace Line
         }
 
         #endregion UserProfile
+
+        #region RichMenu
+
+        public async Task<RichMenusResponse> GetRichMenusAsync()
+        {
+            var response = await _httpClient.GetAsync($"richmenu/list");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var richMenu = JsonConvert.DeserializeObject<RichMenusResponse>(content);
+
+            return richMenu;
+        }
+
+        public async Task<RichMenu> GetRichMenuAsync(string richMenuId)
+        {
+            var response = await _httpClient.GetAsync($"richmenu/{richMenuId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var richMenu = JsonConvert.DeserializeObject<RichMenu>(content);
+
+            return richMenu;
+        }
+
+        public async Task SetDefaultRichMenuAsync(string richMenuId)
+        {
+            var response = await _httpClient.PostAsync($"user/all/richmenu/{richMenuId}", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task DeleteRichMenuAsync(string richMenuId)
+        {
+            var response = await _httpClient.DeleteAsync($"richmenu/{richMenuId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task<string> CreateRichMenuAsync(RichMenu richMenu)
+        {
+            var jsonContent = JsonConvert.SerializeObject(richMenu);
+            var stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"richmenu", stringContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            var richMenuIdResponse = JsonConvert.DeserializeObject<RichMenuIdResponse>(content);
+
+            return richMenuIdResponse?.RichMenuId;
+        }
+
+        public async Task<bool> ValidateRichMenuAsync(RichMenu richMenu)
+        {
+            try
+            {
+                var jsonContent = JsonConvert.SerializeObject(richMenu);
+                var stringContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var response = await _httpClient.PostAsync($"richmenu/validate", stringContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new Exception(errorMessage);
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task SetRichMenuImageAsync(string richMenuId, byte[] imageData)
+        {
+            var byteContent = new ByteArrayContent(imageData);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+            var response = await _httpClient.PostAsync($"richmenu/{richMenuId}/content", byteContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task SetRichMenuImageAsync(string richMenuId, Stream stream)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memoryStream);
+                var imageData = memoryStream.ToArray();
+
+                var byteContent = new ByteArrayContent(imageData);
+
+                byteContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
+                //var ccc = @"richmenu/richmenu-70e38a15d7192067155f700e930188bd/content";
+                var response = await _httpClientData.PostAsync($"richmenu/{richMenuId}/content", byteContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new Exception(errorMessage);
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+            }
+        }
+
+        public async Task GetRichMenuImageAsync(string richMenuId)
+        {
+            var response = await _httpClientData.GetAsync($"richmenu/{richMenuId}/content");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStreamAsync();
+        }
+
+        #endregion RichMenu
+
+        #region Group
+
+        public async Task LeaveGroupAsync(string groupId)
+        {
+            var response = await _httpClient.PostAsync($"group/{groupId}/leave", null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        public async Task GetGroupSummaryAsync(string groupId)
+        {
+            var response = await _httpClient.GetAsync($"group/{groupId}/summary");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception(errorMessage);
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+        }
+
+        #endregion Group
+
+        #region Room
+
+        //public async Task LeaveRoomAsync(string roomId)
+        //{
+        //    var response = await _httpClient.PostAsync($"room/{roomId}/leave", null);
+
+        //    if (!response.IsSuccessStatusCode)
+        //    {
+        //        var errorMessage = await response.Content.ReadAsStringAsync();
+        //        throw new Exception(errorMessage);
+        //    }
+
+        //    var content = await response.Content.ReadAsStringAsync();
+        //}
+
+        #endregion Room
 
         #region Webhook
 
